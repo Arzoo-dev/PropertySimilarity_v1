@@ -1,0 +1,2 @@
+subject_property_id,num_comps,accuracy,precision,recall,f1_score,avg_similar_score,avg_dissimilar_score,similar_count,dissimilar_count
+4544a10a9d2d49f4a7d253e67b7abd37,5,1.0,1.0,1.0,1.0,9.975524008274078,0,5,0
