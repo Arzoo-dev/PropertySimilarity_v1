@@ -13,6 +13,7 @@ A FastAPI service for comparing real estate properties using a Siamese neural ne
 - Vertex AI deployment support
 - Flexible model loading from multiple sources
 - Optimized multi-stage Docker build
+- **Vertex AI compatible endpoint**
 
 ## Installation
 
@@ -47,7 +48,7 @@ uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 
 - `MODEL_DIR`: Path to the directory containing the model checkpoint (default: `/app/final_model`)
 - `MODEL_GCS_PATH`: Google Cloud Storage path to model in format gs://bucket-name/path/to/model.pth.tar
-- `PORT`: Port to run the API server on (default: 69)
+- `PORT`: Port to run the API server on (default: 8080, auto-detected on Vertex AI)
 - `HOST`: Host to bind the server to (default: 0.0.0.0)
 - `ENABLE_CLOUD_LOGGING`: Set to "true" to enable Google Cloud Logging (default: false)
 
@@ -152,6 +153,93 @@ Example response:
 }
 ```
 
+#### Vertex AI Compatible Endpoint
+
+```
+POST /predict
+```
+
+Provides compatibility with Vertex AI's expected format. This endpoint:
+- Accepts requests with data wrapped in an "instances" array
+- Accepts optional parameters field for request-wide settings 
+- Returns responses with data wrapped in a "predictions" array
+
+Example Vertex AI compatible request:
+
+```json
+{
+  "instances": [
+    {
+      "subject_property": {
+        "photos": [
+          {"url": "https://example.com/subject_photo1.jpg"},
+          {"url": "https://example.com/subject_photo2.jpg"}
+        ],
+        "address": "123 Main St, Anytown, USA"
+      },
+      "comps": [
+        {
+          "uid": "comp1",
+          "photos": [
+            {"url": "https://example.com/comp1_photo1.jpg"},
+            {"url": "https://example.com/comp1_photo2.jpg"}
+          ],
+          "address": "456 Oak St, Anytown, USA"
+        }
+      ],
+      "threshold": 5.0,
+      "max_comps": 10
+    }
+  ],
+  "parameters": {
+    "threshold": 5.0,
+    "max_comps": 10
+  }
+}
+```
+
+Note: Parameter values in the instance take precedence over the global parameters field.
+
+Example Vertex AI compatible response:
+
+```json
+{
+  "predictions": [
+    {
+      "subject_property_id": "subject",
+      "metrics": {
+        "num_test_pairs": 1,
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "tp": 1,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "avg_similar_score": 9.9,
+        "avg_dissimilar_score": 0
+      },
+      "comp_pairs": [
+        {
+          "pair_id": 0,
+          "subject_property_id": "subject",
+          "comp_property_id": "comp1",
+          "subject_images": 2,
+          "comp_images": 2,
+          "true_label": "similar",
+          "predicted_label": "similar",
+          "similarity_score": 9.9,
+          "correct_prediction": true,
+          "address": "456 Oak St, Anytown, USA"
+        }
+      ],
+      "threshold": 5.0
+    }
+  ]
+}
+```
+
 ## Documentation
 
 Interactive documentation is available at:
@@ -189,13 +277,13 @@ docker build -t property-api-lightweight -f RunPodsModel/api/Dockerfile .
 #### 1. Run with mounted model weights:
 
 ```bash
-docker run -p 69:69 --gpus all -v /path/to/local/model/weights:/app/weights property-api-lightweight
+docker run -p 8080:8080 --gpus all -v /path/to/local/model/weights:/app/weights property-api-lightweight
 ```
 
 #### 2. Run with Google Cloud Storage model:
 
 ```bash
-docker run -p 69:69 --gpus all -e MODEL_GCS_PATH=gs://your-bucket/models/siamese_embedding_model.pt property-api-lightweight
+docker run -p 8080:8080 --gpus all -e MODEL_GCS_PATH=gs://your-bucket/models/siamese_embedding_model.pt property-api-lightweight
 ```
 
 #### 3. Run with model embedded in the image:
@@ -205,7 +293,7 @@ If you need to include the model in the image (not recommended for larger models
 ```bash
 # First modify the Dockerfile to uncomment the COPY line for model files
 docker build -t property-api-with-model -f RunPodsModel/api/Dockerfile --build-arg INCLUDE_MODEL=true .
-docker run -p 69:69 --gpus all property-api-with-model
+docker run -p 8080:8080 --gpus all property-api-with-model
 ```
 
 ## Vertex AI Deployment
@@ -245,7 +333,7 @@ docker push us-central1-docker.pkg.dev/your-project/property-api-repo/property-a
    - Machine type: n1-standard-4 or appropriate size
    - Accelerator: NVIDIA T4 GPU (1 unit)
    - Min/max replicas: 1/3 (adjust as needed)
-   - Container port: 69
+   - Container port: 8080
    - Environment variables:
      - MODEL_GCS_PATH: gs://your-bucket/models/siamese_embedding_model.pt
      - ENABLE_CLOUD_LOGGING: true
@@ -262,7 +350,7 @@ gcloud ai endpoints deploy-model <endpoint-id> \
     --min-replica-count=1 \
     --max-replica-count=3 \
     --container-image-uri=us-central1-docker.pkg.dev/your-project/property-api-repo/property-api:latest \
-    --container-ports=69 \
+    --container-ports=8080 \
     --container-env-vars=MODEL_GCS_PATH=gs://your-bucket/models/siamese_embedding_model.pt,ENABLE_CLOUD_LOGGING=true
 ```
 

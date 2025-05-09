@@ -200,6 +200,7 @@ The model is packaged as a FastAPI service ready for deployment on RunPods, Vert
 - **Detailed Metrics**: Comprehensive comparison results and similarity scoring
 - **Health Checks**: Monitoring endpoints for deployment health
 - **Flexible Model Loading**: Load models from local files, mounted volumes, or cloud storage
+- **Vertex AI Integration**: Compatible endpoints that handle Vertex AI's request/response format
 
 ### Docker Deployment
 
@@ -210,7 +211,7 @@ The provided multi-stage Dockerfile creates an optimized container with GPU supp
 docker build -t property-api-lightweight -f RunPodsModel/api/Dockerfile .
 
 # Run with local model weights mounted
-docker run -p 69:69 --gpus all -v /path/to/your/final_model:/app/weights property-api-lightweight
+docker run -p 8080:8080 --gpus all -v /path/to/your/final_model:/app/weights property-api-lightweight
 ```
 
 ### Environment Variables
@@ -219,7 +220,7 @@ The API container supports the following environment variables:
 
 - `MODEL_DIR`: Path to the directory containing model weights (default: `/app/final_model`)
 - `MODEL_GCS_PATH`: Google Cloud Storage path to model in format `gs://bucket-name/path/to/model`
-- `PORT`: Port to run the API server on (default: 69)
+- `PORT`: Port to run the API server on (default: 8080, auto-detected on Vertex AI)
 - `HOST`: Host to bind the server to (default: 0.0.0.0)
 - `ENABLE_CLOUD_LOGGING`: Set to "true" to enable Google Cloud Logging
 
@@ -227,8 +228,9 @@ The API container supports the following environment variables:
 
 - `GET /health-check` or `GET /`: Health check endpoint
 - `POST /api/compare-properties`: Main comparison endpoint
+- `POST /predict`: Vertex AI compatible endpoint that handles the platform's request/response format
 
-Example request:
+Example regular request:
 ```json
 {
   "subject_property": {
@@ -250,6 +252,25 @@ Example request:
   "threshold": 5.0
 }
 ```
+
+Example Vertex AI request:
+```json
+{
+  "instances": [
+    {
+      "subject_property": { /* same content as regular request */ },
+      "comps": [ /* same content as regular request */ ],
+      "threshold": 5.0
+    }
+  ],
+  "parameters": {
+    "threshold": 5.0,
+    "max_comps": 10
+  }
+}
+```
+
+Note: Parameter values in the instance take precedence over the global parameters field.
 
 ### Vertex AI Deployment
 
@@ -273,4 +294,8 @@ To deploy the model on Google Cloud Vertex AI:
    - Create a model in the Vertex AI Models section
    - Create an endpoint
    - Deploy the model to the endpoint with GPU acceleration
-   - Set `MODEL_GCS_PATH` environment variable to your model's GCS path 
+   - Set `MODEL_GCS_PATH` environment variable to your model's GCS path
+   - Specify container settings:
+     - Container port: 8080
+     - Prediction route: /predict
+     - Health route: /health-check 

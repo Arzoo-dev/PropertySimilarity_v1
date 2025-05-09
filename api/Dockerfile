@@ -91,7 +91,7 @@ RUN chmod +x /start.sh
 
 # Set environment variables
 ENV MODEL_DIR=/app/final_model
-ENV PORT=69
+# PORT will be set by Vertex AI at runtime
 ENV HOST=0.0.0.0
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
@@ -101,12 +101,12 @@ ENV TMPDIR=/var/tmp
 # Create and set permissions for tmp directory
 RUN mkdir -p $TMPDIR && chmod 1777 $TMPDIR
 
-# Expose the port
-EXPOSE 69
+# Expose port - Vertex AI will use the PORT env variable
+EXPOSE 8080
 
-# Add healthcheck
+# Add healthcheck compatible with both Vertex AI and custom environments
 HEALTHCHECK --interval=30s --timeout=30s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:${PORT}/health-check || exit 1
+  CMD curl -f http://localhost:${PORT:-8080}/health-check || exit 1
 
 # Run the application
 CMD ["/start.sh"] 

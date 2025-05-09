@@ -10,9 +10,19 @@ if [ -z "$MODEL_DIR" ]; then
     echo "MODEL_DIR not set, using default: $MODEL_DIR"
 fi
 
+# Handle PORT for Vertex AI compatibility
+# Vertex AI sets the PORT environment variable automatically
 if [ -z "$PORT" ]; then
-    export PORT="69"
+    # Default to 8080 for Vertex AI
+    export PORT="8080"
     echo "PORT not set, using default: $PORT"
+fi
+
+# Check for Vertex AI specific environment variables
+if [ ! -z "$AIP_PREDICT_ROUTE" ]; then
+    echo "Running in Vertex AI environment"
+    echo "AIP_PREDICT_ROUTE: $AIP_PREDICT_ROUTE"
+    echo "AIP_HEALTH_ROUTE: $AIP_HEALTH_ROUTE"
 fi
 
 if [ -z "$HOST" ]; then
@@ -40,8 +50,8 @@ if [ ! -f "$MODEL_DIR/siamese_embedding_model.pt" ]; then
         cp -r /app/weights/* $MODEL_DIR/
     # Check for model in default Docker container location
     elif [ -d "/app/final_model" ] && [ -f "/app/final_model/siamese_embedding_model.pt" ]; then
-        echo "Copying model files from /app/final_model to $MODEL_DIR"
-        cp -r /app/final_model/* $MODEL_DIR/
+    echo "Copying model files from /app/final_model to $MODEL_DIR"
+    cp -r /app/final_model/* $MODEL_DIR/
     # Download from Google Cloud Storage if path is provided
     elif [ ! -z "$MODEL_GCS_PATH" ]; then
         echo "Downloading model from GCS: $MODEL_GCS_PATH"

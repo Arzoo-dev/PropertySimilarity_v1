@@ -13,9 +13,9 @@ from fastapi.responses import JSONResponse
 import uvicorn
 import time
 
-from schemas import PropertyComparisonRequest, ComparisonResult
-from services import ModelService
-from utils import clear_cache, setup_json_logging, logger
+from api.schemas import PropertyComparisonRequest, ComparisonResult
+from api.services import ModelService
+from api.utils import clear_cache, setup_json_logging, logger
 
 # Setup JSON logging for Google Cloud Logging
 setup_json_logging()
@@ -139,6 +139,85 @@ async def compare_properties(
         raise HTTPException(
             status_code=500,
             detail=f"Error processing comparison request: {str(e)}"
+        )
+
+
+@app.post("/predict")
+async def predict_vertex_ai(request: Request, background_tasks: BackgroundTasks):
+    """
+    Vertex AI compatible prediction endpoint.
+    
+    Accepts requests in Vertex AI format with "instances" array and
+    returns responses in Vertex AI format with "predictions" array.
+    """
+    # Check if model service is initialized
+    if model_service is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Model service not initialized. Please try again later."
+        )
+    
+    try:
+        # Parse the raw request
+        request_json = await request.json()
+        
+        # Validate that the request has the "instances" key
+        if "instances" not in request_json or not request_json["instances"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid request format. Expected 'instances' array in request."
+            )
+        
+        # Support for parameters field if provided by Vertex AI
+        parameters = request_json.get("parameters", {})
+        
+        # Get the first instance (Vertex AI batches requests)
+        instance = request_json["instances"][0]
+        
+        # Convert to our internal format
+        comparison_request = PropertyComparisonRequest(
+            subject_property=instance["subject_property"],
+            comps=instance["comps"],
+            threshold=instance.get("threshold", parameters.get("threshold", 5.0)),
+            max_comps=instance.get("max_comps", parameters.get("max_comps", None))
+        )
+        
+        # Process using the existing logic
+        logger.info(f"Processing Vertex AI prediction: 1 subject property with {len(comparison_request.comps)} comp properties")
+        
+        # Extract subject property photos
+        subject_photos = [str(photo.url) for photo in comparison_request.subject_property.photos]
+        
+        # Process comps
+        comp_properties = []
+        for comp in comparison_request.comps:
+            comp_properties.append({
+                "uid": comp.uid,
+                "photos": [{"url": str(photo.url)} for photo in comp.photos],
+                "address": comp.address
+            })
+        
+        # Run comparison
+        result = await model_service.compare_properties(
+            subject_photos=subject_photos,
+            comp_properties=comp_properties,
+            threshold=comparison_request.threshold,
+            max_comps=comparison_request.max_comps
+        )
+        
+        # Schedule cache cleanup after response
+        background_tasks.add_task(clear_cache)
+        
+        # Return response in Vertex AI format
+        return {
+            "predictions": [result]
+        }
+    
+    except Exception as e:
+        logger.error(f"Error processing Vertex AI prediction request: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing prediction request: {str(e)}"
         )
 
 
