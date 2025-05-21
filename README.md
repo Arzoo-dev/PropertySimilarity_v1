@@ -36,6 +36,25 @@ To install the required dependencies:
 pip install -r requirements.txt
 ```
 
+### Key Dependencies
+
+- PyTorch 2.1.0 with CUDA support
+- torchvision 0.16.0
+- numpy, pandas, scikit-learn for data processing
+- tqdm for progress monitoring
+- albumentations for image augmentation
+- matplotlib for visualization
+- OpenCV (opencv-python) for image processing
+- FastAPI and uvicorn for API serving
+
+### System Dependencies
+
+For OpenCV and image processing, these system packages are required:
+
+```bash
+apt-get install -y libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 libxrender-dev
+```
+
 ## Data Sources
 
 The system supports two methods of obtaining training data:
@@ -214,6 +233,14 @@ docker build -t property-api-lightweight -f RunPodsModel/api/Dockerfile .
 docker run -p 8080:8080 --gpus all -v /path/to/your/final_model:/app/weights property-api-lightweight
 ```
 
+#### Docker Image Features
+
+- Multi-stage build process to minimize final image size
+- CUDA 11.8 with cuDNN8 for GPU acceleration
+- OpenCV system dependencies pre-installed
+- Extended timeout and retry settings for large package downloads
+- Comprehensive verification to ensure all packages are properly installed
+
 ### Environment Variables
 
 The API container supports the following environment variables:
@@ -298,4 +325,14 @@ To deploy the model on Google Cloud Vertex AI:
    - Specify container settings:
      - Container port: 8080
      - Prediction route: /predict
-     - Health route: /health-check 
+     - Health route: /health-check
+
+### Vertex AI Deployment Troubleshooting
+
+If you encounter issues with your Vertex AI deployment:
+
+1. **Package Dependency Issues**: Ensure tqdm, albumentations, and other required packages are installed
+2. **OpenCV System Libraries**: Add necessary system packages (libgl1-mesa-glx, etc.) for OpenCV functionality
+3. **GCS Access Permissions**: Grant your service account proper permissions to access your model bucket
+4. **Large File Downloads**: Use --resume-retries and increased timeouts for downloading large models
+5. **Memory Limitations**: Ensure your deployment has sufficient memory for both model and image processing 

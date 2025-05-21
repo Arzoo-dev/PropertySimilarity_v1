@@ -28,6 +28,14 @@ pip install -r requirements.txt
    - Mounted volume at `/app/weights`
    - Google Cloud Storage (when using `MODEL_GCS_PATH`)
 
+### System Dependencies
+
+For OpenCV and image processing, you may need to install these system packages:
+
+```bash
+apt-get install -y libgl1-mesa-glx libglib2.0-0 libsm6 libxext6 libxrender-dev
+```
+
 ## Usage
 
 ### Running the API Locally
@@ -272,6 +280,15 @@ The project includes a multi-stage Dockerfile that significantly reduces the fin
 docker build -t property-api-lightweight -f RunPodsModel/api/Dockerfile .
 ```
 
+#### Key Features of the Docker Image:
+
+- CUDA 11.8 with cuDNN for GPU acceleration
+- Multi-stage build for smaller final image
+- OpenCV system dependencies pre-installed
+- tqdm, matplotlib, pandas, and other data science packages included
+- Extended timeout and retry settings for large package downloads
+- Comprehensive verification steps to ensure all packages are installed correctly
+
 ### Run with different model loading options:
 
 #### 1. Run with mounted model weights:
@@ -355,6 +372,15 @@ gcloud ai endpoints deploy-model <endpoint-id> \
 ```
 
 4. The API will be available at the Vertex AI endpoint URL.
+
+### Vertex AI Deployment Troubleshooting
+
+If you encounter issues with the Vertex AI deployment:
+
+1. **Missing packages**: Ensure your Docker image has all required packages (albumentations, tqdm, matplotlib, etc.)
+2. **OpenCV dependency errors**: Verify that your Dockerfile includes the necessary system libraries for OpenCV
+3. **GCS Permissions**: Grant the service account storage.objects.list access to your GCS bucket
+4. **Package download timeout**: Use the --resume-retries flag in pip install commands
 
 ### Vertex AI Considerations
 
