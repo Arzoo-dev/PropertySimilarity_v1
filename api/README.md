@@ -337,9 +337,32 @@ docker tag property-api-lightweight us-central1-docker.pkg.dev/your-project/prop
 docker push us-central1-docker.pkg.dev/your-project/property-api-repo/property-api:latest
 ```
 
-3. Deploy the container to Vertex AI:
+### Automated Deployment with Cloud Build
 
-### Using Google Cloud Console (UI):
+This repository includes a `cloudbuild.yaml` file that automates the deployment process to Google Cloud Vertex AI:
+
+```bash
+# Trigger the Cloud Build pipeline
+gcloud builds submit --config RunPodsModel/api/cloudbuild.yaml
+```
+
+The Cloud Build configuration:
+1. Builds the Docker image
+2. Pushes it to Google Artifact Registry
+3. Uploads the model to Vertex AI
+4. Deploys the model to a specified endpoint
+
+This automated process uses:
+- A100 GPU acceleration
+- n1-standard-4 machine type
+- Custom service account with appropriate permissions
+- Pre-configured endpoint ID
+
+The specific configurations like endpoint IDs, model IDs, and project details are already set in the YAML file.
+
+### Manual Deployment Options
+
+#### Using Google Cloud Console (UI):
 
 1. Go to Vertex AI section in Google Cloud Console
 2. Navigate to "Models" and click "Create"

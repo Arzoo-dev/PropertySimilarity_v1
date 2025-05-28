@@ -1,0 +1,46 @@
+steps:
+  # Step 1: Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed:latest'
+      - './PropertySimilarity_v1/api'
+
+  # Step 2: Push the Docker image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed:latest'
+
+  # Step 3: Upload the model to Vertex AI
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+        gcloud config set project dash-realty-agent-portal
+        gcloud ai models upload \
+          --region=us-central1 \
+          --display-name=property-comparison-api \
+          --container-image-uri=us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed:latest \
+          --artifact-uri=gs://property-comparison-model/
+
+  # Step 4: Deploy the model to the existing endpoint
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud ai endpoints deploy-model 8090871761710612480 \
+          --region=us-central1 \
+          --model=2418225192200306688 \
+          --display-name=property-comparison-api-deployment \
+          --machine-type=n1-standard-4 \
+          --accelerator=type=NVIDIA_TESLA_A100,count=1 \
+          --service-account=vertex-ai-access-398@dash-realty-agent-portal.iam.gserviceaccount.com \
+          --traffic-split=0=100
+
+images:
+  - 'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed:latest' 

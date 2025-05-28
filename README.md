@@ -317,7 +317,24 @@ To deploy the model on Google Cloud Vertex AI:
    docker push us-central1-docker.pkg.dev/your-project/property-api-repo/property-api:latest
    ```
 
-3. **Deploy to Vertex AI** via Google Cloud Console:
+3. **Automated Deployment with Cloud Build**
+
+   The repository includes a `cloudbuild.yaml` file in the `api` folder that automates the entire deployment process:
+   
+   ```bash
+   # Run the Cloud Build pipeline
+   gcloud builds submit --config RunPodsModel/api/cloudbuild.yaml
+   ```
+   
+   This automated pipeline:
+   - Builds the Docker image with the model API
+   - Pushes the image to Google Artifact Registry
+   - Creates or updates the model in Vertex AI
+   - Deploys the model to a pre-configured endpoint with A100 GPU acceleration
+   
+   The configuration uses specific project identifiers, endpoint IDs, and service accounts that are pre-configured for your environment.
+
+4. **Manual Deployment to Vertex AI** via Google Cloud Console:
    - Create a model in the Vertex AI Models section
    - Create an endpoint
    - Deploy the model to the endpoint with GPU acceleration
