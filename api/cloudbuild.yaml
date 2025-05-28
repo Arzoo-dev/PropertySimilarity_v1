@@ -2,6 +2,8 @@ availableSecrets:
   secretManager:
     - versionName: projects/dash-realty-agent-portal/secrets/dash-realty-agent-portal-ba916c514fa4/versions/latest
       env: GOOGLE_APPLICATION_CREDENTIALS_JSON
+options:
+  logging: CLOUD_LOGGING_ONLY
 
 steps:
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
