@@ -1,5 +1,13 @@
 steps:
-  # Step 1: Build Docker image from PropertySimilarity_v1/api folder
+  # Debug step: list files to confirm Dockerfile presence and path
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: List files
+    args:
+      - 'bash'
+      - '-c'
+      - 'ls -alh PropertySimilarity_v1/api'
+
+  # Step 1: Build Docker image from correct directory
   - name: 'gcr.io/cloud-builders/docker'
     id: Build Docker Image
     args:
