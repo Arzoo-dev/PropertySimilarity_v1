@@ -7,6 +7,8 @@ steps:
         'build',
         '-t',
         'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed',
+        '-f',
+        'Dockerfile',
         '.'
       ]
     dir: 'PropertySimilarity_v1/api'
