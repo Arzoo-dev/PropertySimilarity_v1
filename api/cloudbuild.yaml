@@ -2,6 +2,7 @@ steps:
   # Step 1: Authenticate using service account JSON from Secret Manager
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
+    secretEnv: ['GOOGLE_APPLICATION_CREDENTIALS_JSON']
     args:
       - '-c'
       - |
