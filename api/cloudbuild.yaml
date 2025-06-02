@@ -1,18 +1,7 @@
 steps:
-  # Step 1: Authenticate using service account JSON from Secret Manager
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'bash'
-    secretEnv: ['GOOGLE_APPLICATION_CREDENTIALS_JSON']
-    args:
-      - '-c'
-      - |
-        echo "$GOOGLE_APPLICATION_CREDENTIALS_JSON" > sa_key.json
-        export GOOGLE_APPLICATION_CREDENTIALS=sa_key.json
-        gcloud auth activate-service-account --key-file=sa_key.json
-        gcloud config set project dash-realty-agent-portal
-
-  # Step 2: Build Docker image
+  # Step 1: Build Docker image
   - name: 'gcr.io/cloud-builders/docker'
+    id: Build Docker Image
     args:
       [
         'build',
@@ -20,14 +9,29 @@ steps:
         'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed',
         '.'
       ]
+    dir: 'PropertySimilarity_v1/api'
 
-  # Step 3: Push Docker image
+  # Step 2: Push Docker image
   - name: 'gcr.io/cloud-builders/docker'
+    id: Push Docker Image
     args:
       [
         'push',
         'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed'
       ]
+
+  # Step 3: Authenticate with service account JSON secret
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    secretEnv: ['GOOGLE_APPLICATION_CREDENTIALS_JSON']
+    args:
+      - '-c'
+      - |
+        echo "$$GOOGLE_APPLICATION_CREDENTIALS_JSON" > sa_key.json
+        export GOOGLE_APPLICATION_CREDENTIALS=sa_key.json
+
+        gcloud auth activate-service-account --key-file=sa_key.json
+        gcloud config set project dash-realty-agent-portal
 
   # Step 4: Deploy to Cloud Run with NVIDIA L4 GPU
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
