@@ -20,7 +20,7 @@ steps:
         'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed'
       ]
 
-  # Step 3: Authenticate with service account JSON secret
+  # Step 3: Authenticate with service account JSON secret from Secret Manager
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: Authenticate
     entrypoint: 'bash'
