@@ -1,5 +1,5 @@
 steps:
-  # Debug step: list files to confirm Dockerfile presence and path
+  # Debug step: List files to confirm Dockerfile presence and path
   - name: 'gcr.io/cloud-builders/gcloud'
     id: List files
     entrypoint: 'bash'
@@ -11,25 +11,22 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     id: Build Docker Image
     args:
-      [
-        'build',
-        '-t',
-        'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed',
-        '.'
-      ]
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed'
+      - '.'
     dir: 'PropertySimilarity_v1/api'
 
   # Step 2: Push Docker image
   - name: 'gcr.io/cloud-builders/docker'
     id: Push Docker Image
     args:
-      [
-        'push',
-        'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed'
-      ]
+      - 'push'
+      - 'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed'
 
   # Step 3: Authenticate with service account JSON secret
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: Authenticate
     entrypoint: 'bash'
     secretEnv: ['GOOGLE_APPLICATION_CREDENTIALS_JSON']
     args:
@@ -37,12 +34,12 @@ steps:
       - |
         echo "$GOOGLE_APPLICATION_CREDENTIALS_JSON" > sa_key.json
         export GOOGLE_APPLICATION_CREDENTIALS=sa_key.json
-
         gcloud auth activate-service-account --key-file=sa_key.json
         gcloud config set project dash-realty-agent-portal
 
   # Step 4: Deploy to Cloud Run with NVIDIA L4 GPU
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: Deploy to Cloud Run
     entrypoint: 'bash'
     args:
       - '-c'
@@ -59,8 +56,8 @@ steps:
           --port=8080 \
           --max-instances=3 \
           --execution-environment=gen2 \
-          --update-secrets=GOOGLE_APPLICATION_CREDENTIALS_JSON=projects/464994061323/secrets/dash-comps-puller-ai:latest \
-          --labels=cloud.googleapis.com/accelerator=nvidia-l4
+          --gpu=type=nvidia-l4,count=1 \
+          --update-secrets=GOOGLE_APPLICATION_CREDENTIALS_JSON=projects/464994061323/secrets/dash-comps pulling-ai:latest
 
 availableSecrets:
   secretManager:
@@ -68,4 +65,5 @@ availableSecrets:
       env: GOOGLE_APPLICATION_CREDENTIALS_JSON
 
 options:
+  substitutionOption: 'ALLOW_LOOSE'
   logging: CLOUD_LOGGING_ONLY
