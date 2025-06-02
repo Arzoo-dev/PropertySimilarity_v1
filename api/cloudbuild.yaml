@@ -1,5 +1,5 @@
 steps:
-  # Step 1: Write secret to a file and auth with service account
+  # Step 1: Auth with service account using Secret Manager
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     secretEnv: ['GOOGLE_APPLICATION_CREDENTIALS_JSON']
@@ -11,7 +11,7 @@ steps:
         gcloud auth activate-service-account --key-file=sa_key.json
         gcloud config set project dash-realty-agent-portal
 
-  # Step 2: Build and push Docker image to Artifact Registry
+  # Step 2: Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
@@ -21,6 +21,7 @@ steps:
         '.'
       ]
 
+  # Step 3: Push Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       [
@@ -28,7 +29,7 @@ steps:
         'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed'
       ]
 
-  # Step 3: Deploy to Cloud Run with GPU, 4 CPU, 16Gi RAM
+  # Step 4: Deploy to Cloud Run with GPU
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
@@ -45,11 +46,9 @@ steps:
           --timeout=300s \
           --port=8080 \
           --max-instances=3 \
-          --args=--port=8080 \
           --update-secrets=GOOGLE_APPLICATION_CREDENTIALS_JSON=projects/464994061323/secrets/dash-comps-puller-ai:latest \
-          --vpc-connector=YOUR_VPC_CONNECTOR \
           --execution-environment=gen2 \
-          --update-env-vars=GOOGLE_APPLICATION_CREDENTIALS=/secrets/GOOGLE_APPLICATION_CREDENTIALS_JSON \
+          --args=--port=8080 \
           --labels=cloud.googleapis.com/accelerator=nvidia-l4
 
 availableSecrets:
