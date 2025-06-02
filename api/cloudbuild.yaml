@@ -2,8 +2,8 @@ steps:
   # Debug step: list files to confirm Dockerfile presence and path
   - name: 'gcr.io/cloud-builders/gcloud'
     id: List files
+    entrypoint: 'bash'
     args:
-      - 'bash'
       - '-c'
       - 'ls -alh PropertySimilarity_v1/api'
 
@@ -35,7 +35,7 @@ steps:
     args:
       - '-c'
       - |
-        echo "$$GOOGLE_APPLICATION_CREDENTIALS_JSON" > sa_key.json
+        echo "$GOOGLE_APPLICATION_CREDENTIALS_JSON" > sa_key.json
         export GOOGLE_APPLICATION_CREDENTIALS=sa_key.json
 
         gcloud auth activate-service-account --key-file=sa_key.json
