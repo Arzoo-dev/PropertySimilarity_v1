@@ -16,7 +16,7 @@ steps:
         # Navigate to the API directory
         cd PropertySimilarity_v1/api
 
-        # Write the secret (service account JSON) to a key file
+        # Write secret (service account JSON) to a key file
         echo "$$GOOGLE_APPLICATION_CREDENTIALS_JSON" > sa_key.json
         export GOOGLE_APPLICATION_CREDENTIALS=sa_key.json
 
@@ -24,26 +24,17 @@ steps:
         gcloud auth activate-service-account --key-file=$$GOOGLE_APPLICATION_CREDENTIALS
         gcloud config set project dash-realty-agent-portal
 
-        # Build and push the Docker image to Artifact Registry
-        docker build -t us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed .
-        docker push us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed
+        # Build and push Docker image to Artifact Registry
+        docker build -t us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-cloudrun .
+        docker push us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-cloudrun
 
-        # Upload the model to Vertex AI
-        gcloud ai models upload \
+        # Deploy to Cloud Run (not Vertex AI)
+        gcloud run deploy comapre-property \
+          --image=us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-cloudrun \
           --region=us-central1 \
-          --display-name=property-comparison-api \
-          --container-image-uri=us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed \
-          --container-ports=8080 \
-          --container-health-route=/health \
-          --container-predict-route=/predict \
-          --artifact-uri=gs://property-comparison-model/
-
-        # Deploy the model to an existing endpoint
-        gcloud ai endpoints deploy-model 8090871761710612480 \
-          --region=us-central1 \
-          --model=2418225192200306688 \
-          --display-name=property-comparison-api-deployment \
-          --machine-type=n1-standard-4 \
-          --accelerator=type=NVIDIA_TESLA_A100,count=1 \
-          --traffic-split=0=100 \
-          --service-account=vertex-ai-access-398@dash-realty-agent-portal.iam.gserviceaccount.com
+          --platform=managed \
+          --allow-unauthenticated \
+          --memory=4Gi \
+          --cpu=2 \
+          --service-account=vertex-ai-access-398@dash-realty-agent-portal.iam.gserviceaccount.com \
+          --port=8080
