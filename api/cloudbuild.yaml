@@ -13,22 +13,22 @@ steps:
     args:
       - '-c'
       - |
-        # Navigate to the api directory
+        # Move into the Dockerfile directory
         cd PropertySimilarity_v1/api
 
-        # Write the secret to a key file
+        # Write secret key to file
         echo "$GOOGLE_APPLICATION_CREDENTIALS_JSON" > sa_key.json
         export GOOGLE_APPLICATION_CREDENTIALS=sa_key.json
 
-        # Authenticate with service account
+        # Authenticate
         gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
         gcloud config set project dash-realty-agent-portal
 
-        # Build and push the Docker image to Artifact Registry
+        # Build and push Docker image
         docker build -t us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed .
         docker push us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed
 
-        # Upload the model to Vertex AI
+        # Upload model to Vertex AI
         gcloud ai models upload \
           --region=us-central1 \
           --display-name=property-comparison-api \
@@ -38,7 +38,7 @@ steps:
           --container-predict-route=/predict \
           --artifact-uri=gs://property-comparison-model/
 
-        # Deploy the model to an existing endpoint
+        # Deploy to Vertex endpoint
         gcloud ai endpoints deploy-model 8090871761710612480 \
           --region=us-central1 \
           --model=2418225192200306688 \
