@@ -1,14 +1,4 @@
 steps:
-  # Debug step: Log substitution variables to diagnose trigger issue
-  - name: 'gcr.io/cloud-builders/gcloud'
-    id: Debug Substitutions
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        echo "Checking substitutions:"
-        env | grep GOOGLE_APPLICATION_CREDENTIALS_JSON || echo "No GOOGLE_APPLICATION_CREDENTIALS_JSON found"
-
   # Debug step: List files to confirm Dockerfile presence and path
   - name: 'gcr.io/cloud-builders/gcloud'
     id: List files
@@ -77,6 +67,3 @@ availableSecrets:
 options:
   substitutionOption: 'ALLOW_LOOSE'
   logging: CLOUD_LOGGING_ONLY
-
-substitutions:
-  _GOOGLE_APPLICATION_CREDENTIALS_JSON: ""  # Workaround for unused substitution
