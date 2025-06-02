@@ -1,5 +1,5 @@
 steps:
-  # Step 1: Build Docker image
+  # Step 1: Build Docker image from PropertySimilarity_v1/api folder
   - name: 'gcr.io/cloud-builders/docker'
     id: Build Docker Image
     args:
