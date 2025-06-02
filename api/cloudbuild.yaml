@@ -2,6 +2,7 @@ availableSecrets:
   secretManager:
     - versionName: projects/dash-realty-agent-portal/secrets/dash-realty-agent-portal-ba916c514fa4/versions/latest
       env: GOOGLE_APPLICATION_CREDENTIALS_JSON
+
 options:
   logging: CLOUD_LOGGING_ONLY
 
@@ -12,9 +13,12 @@ steps:
     args:
       - '-c'
       - |
+        # Navigate to the api directory
+        cd PropertySimilarity_v1/api
+
         # Write the secret to a key file
-        echo "$GOOGLE_APPLICATION_CREDENTIALS_JSON" > /workspace/sa_key.json
-        export GOOGLE_APPLICATION_CREDENTIALS=/workspace/sa_key.json
+        echo "$GOOGLE_APPLICATION_CREDENTIALS_JSON" > sa_key.json
+        export GOOGLE_APPLICATION_CREDENTIALS=sa_key.json
 
         # Authenticate with service account
         gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
