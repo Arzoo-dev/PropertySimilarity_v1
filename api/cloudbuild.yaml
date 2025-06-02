@@ -57,7 +57,7 @@ steps:
           --max-instances=3 \
           --execution-environment=gen2 \
           --gpu=type=nvidia-l4,count=1 \
-          --update-secrets=GOOGLE_APPLICATION_CREDENTIALS_JSON=projects/464994061323/secrets/dash-comps pulling-ai:latest
+          --update-secrets=GOOGLE_APPLICATION_CREDENTIALS_JSON=projects/464994061323/secrets/dash-comps-puller-ai:latest
 
 availableSecrets:
   secretManager:
@@ -67,3 +67,6 @@ availableSecrets:
 options:
   substitutionOption: 'ALLOW_LOOSE'
   logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _GOOGLE_APPLICATION_CREDENTIALS_JSON: ""  # Workaround for unused substitution
