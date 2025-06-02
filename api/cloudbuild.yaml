@@ -1,4 +1,16 @@
 steps:
+  # Debug step: Log substitutions and environment variables
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: Debug Substitutions
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Substitutions passed to build:"
+        env | grep _GOOGLE_APPLICATION_CREDENTIALS_JSON || echo "No GOOGLE_APPLICATION_CREDENTIALS_JSON substitution found"
+        echo "Environment variables:"
+        env | sort
+
   # Debug step: List files to confirm Dockerfile presence and path
   - name: 'gcr.io/cloud-builders/gcloud'
     id: List files
@@ -67,3 +79,6 @@ availableSecrets:
 options:
   substitutionOption: 'ALLOW_LOOSE'
   logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _GOOGLE_APPLICATION_CREDENTIALS_JSON: ""  # Fallback for substitution validation
