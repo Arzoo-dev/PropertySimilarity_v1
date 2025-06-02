@@ -1,3 +1,11 @@
+availableSecrets:
+  secretManager:
+    - versionName: projects/464994061323/secrets/dash-comps-puller-ai/versions/latest
+      env: GOOGLE_APPLICATION_CREDENTIALS_JSON
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
 steps:
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
@@ -8,7 +16,7 @@ steps:
         # Navigate to the API directory
         cd PropertySimilarity_v1/api
 
-        # Write the secret to a key file
+        # Write the secret (service account JSON) to a key file
         echo "$$GOOGLE_APPLICATION_CREDENTIALS_JSON" > sa_key.json
         export GOOGLE_APPLICATION_CREDENTIALS=sa_key.json
 
@@ -39,11 +47,3 @@ steps:
           --accelerator=type=NVIDIA_TESLA_A100,count=1 \
           --traffic-split=0=100 \
           --service-account=vertex-ai-access-398@dash-realty-agent-portal.iam.gserviceaccount.com
-
-availableSecrets:
-  secretManager:
-    - versionName: projects/dash-realty-agent-portal/secrets/dash-realty-agent-portal-ba916c514fa4/versions/latest
-      env: GOOGLE_APPLICATION_CREDENTIALS_JSON
-
-options:
-  logging: CLOUD_LOGGING_ONLY
