@@ -1,8 +1,6 @@
 steps:
-  # Step 1: Build Docker image from current directory
   - name: 'gcr.io/cloud-builders/docker'
     id: Build Docker Image
-    dir: 'PropertySimilarity_v1/api' 
     args:
       [
         'build',
@@ -13,7 +11,6 @@ steps:
         '.'
       ]
 
-  # Step 2: Push Docker image
   - name: 'gcr.io/cloud-builders/docker'
     id: Push Docker Image
     args:
@@ -22,7 +19,6 @@ steps:
         'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed'
       ]
 
-  # Step 3: Authenticate using secret
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     secretEnv: ['GOOGLE_APPLICATION_CREDENTIALS_JSON']
@@ -34,7 +30,6 @@ steps:
         gcloud auth activate-service-account --key-file=sa_key.json
         gcloud config set project dash-realty-agent-portal
 
-  # Step 4: Deploy to Cloud Run with GPU
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
