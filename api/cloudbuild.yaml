@@ -1,7 +1,8 @@
 steps:
-  # Step 1: Build Docker image (Dockerfile is in current directory)
+  # Step 1: Build Docker image from current dir
   - name: 'gcr.io/cloud-builders/docker'
     id: Build Docker Image
+    dir: '.'  # ✅ REQUIRED so Dockerfile is found in current dir
     args:
       [
         'build',
