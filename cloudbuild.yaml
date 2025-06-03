@@ -1,7 +1,7 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     id: Build Docker Image
-    dir: 'PropertySimilarity_v1/api'
+    dir: 'PropertySimilarity_v1/api/Dockerfile'
     args:
       [
         'build',
