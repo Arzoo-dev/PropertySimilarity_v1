@@ -1,6 +1,6 @@
 # Property Comparison API
 
-A FastAPI service for comparing real estate properties using a Siamese neural network.
+A FastAPI service for comparing real estate properties using a DINOv2 neural network.
 
 ## Features
 
@@ -277,7 +277,7 @@ The project includes a multi-stage Dockerfile that significantly reduces the fin
 ### Build the Docker image:
 
 ```bash
-docker build -t property-api-lightweight -f RunPodsModel/api/Dockerfile .
+docker build -t property-api-dinov2 -f api/Dockerfile .
 ```
 
 #### Key Features of the Docker Image:
@@ -294,13 +294,13 @@ docker build -t property-api-lightweight -f RunPodsModel/api/Dockerfile .
 #### 1. Run with mounted model weights:
 
 ```bash
-docker run -p 8080:8080 --gpus all -v /path/to/local/model/weights:/app/weights property-api-lightweight
+docker run -p 8080:8080 --gpus all -v /path/to/local/model/weights:/app/weights property-api-dinov2
 ```
 
 #### 2. Run with Google Cloud Storage model:
 
 ```bash
-docker run -p 8080:8080 --gpus all -e MODEL_GCS_PATH=gs://your-bucket/models/siamese_embedding_model.pt property-api-lightweight
+docker run -p 8080:8080 --gpus all -e MODEL_GCS_PATH=gs://your-bucket/models/DINOv2_custom.pth property-api-dinov2
 ```
 
 #### 3. Run with model embedded in the image:
@@ -330,8 +330,8 @@ gsutil cp -r final_model/* gs://your-bucket/models/
 gcloud auth configure-docker us-central1-docker.pkg.dev
 
 # Build and tag the image
-docker build -t property-api-lightweight -f RunPodsModel/api/Dockerfile .
-docker tag property-api-lightweight us-central1-docker.pkg.dev/your-project/property-api-repo/property-api:latest
+docker build -t property-api-dinov2 -f api/Dockerfile .
+docker tag property-api-dinov2 us-central1-docker.pkg.dev/your-project/property-api-repo/property-api:latest
 
 # Push to Artifact Registry
 docker push us-central1-docker.pkg.dev/your-project/property-api-repo/property-api:latest

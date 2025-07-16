@@ -5,7 +5,8 @@ Utility functions for property comparison API
 import os
 import logging
 import json
-import aiohttp
+# import aiohttp
+import httpx
 import asyncio
 import tempfile
 from typing import List, Dict, Tuple, Any, Optional
@@ -18,7 +19,6 @@ from pathlib import Path
 import numpy as np
 import torchvision.transforms as transforms
 import sys
-from yarl import URL
 
 # Google Cloud imports
 try:
@@ -36,9 +36,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Image processing constants
-IMG_SIZE = (224, 224)
-IMG_MEAN = [0.485, 0.456, 0.406]
-IMG_STD = [0.229, 0.224, 0.225]
+IMG_SIZE = (518, 518)  # DINOv2 input size
+IMG_MEAN = [0.5, 0.5, 0.5]      # DINOv2 normalization
+IMG_STD = [0.5, 0.5, 0.5]       # DINOv2 normalization
 
 # Cache for downloaded images
 IMAGE_CACHE = {}
@@ -94,13 +94,20 @@ def _setup_json_console_logging():
             log_record = {
                 "severity": record.levelname,
                 "message": record.getMessage(),
-                "time": time.strftime("%Y-%m-%dT%H:%M:%S.%fZ", time.gmtime(record.created)),
+                "time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(record.created)),
                 "logger": record.name
             }
             
             # Add extra fields
-            if hasattr(record, "extra"):
-                log_record.update(record.extra)
+            if hasattr(record, '__dict__'):
+                # Add any extra fields that aren't standard LogRecord attributes
+                standard_attrs = {'name', 'msg', 'args', 'levelname', 'levelno', 'pathname', 'filename', 
+                                 'module', 'exc_info', 'exc_text', 'stack_info', 'lineno', 'funcName', 
+                                 'created', 'msecs', 'relativeCreated', 'thread', 'threadName', 
+                                 'processName', 'process', 'getMessage', 'message'}
+                extra_fields = {k: v for k, v in record.__dict__.items() if k not in standard_attrs}
+                if extra_fields:
+                    log_record.update(extra_fields)
                 
             # Add exception info if available
             if record.exc_info:
@@ -125,13 +132,13 @@ def _setup_json_console_logging():
     logger.info("JSON console logging configured for Cloud Logging compatibility")
 
 
-async def download_image(session: aiohttp.ClientSession, url: str, 
+async def download_image(session: httpx.AsyncClient, url: str, 
                          max_retries: int = 3, timeout: int = 30) -> Optional[bytes]:
     """
     Download an image from a URL with retry logic
     
     Args:
-        session: aiohttp client session
+        session: httpx async client
         url: URL of the image to download
         max_retries: Maximum number of retry attempts
         timeout: Timeout in seconds
@@ -156,17 +163,14 @@ async def download_image(session: aiohttp.ClientSession, url: str,
 
     while retry_count < max_retries:
         try:
-            # Create a proper yarl.URL object explicitly to avoid internal type issues
-            request_url = URL(url)
-            
             # Log again right before the call
-            logger.debug(f"Calling session.get with URL (type {type(request_url)}): {repr(request_url)}")
+            logger.debug(f"Calling session.get with URL (type {type(url)}): {repr(url)}")
             
-            async with session.get(request_url, timeout=timeout) as response:
-                if response.status == 200:
-                    return await response.read()
-                else:
-                    logger.warning(f"Failed to download image: {url}, status: {response.status}")
+            response = await session.get(url, timeout=timeout)
+            if response.status_code == 200:
+                return response.content
+            else:
+                logger.warning(f"Failed to download image: {url}, status: {response.status_code}")
                     
         except asyncio.TimeoutError:
             logger.warning(f"Timeout downloading image: {url}")
@@ -182,13 +186,13 @@ async def download_image(session: aiohttp.ClientSession, url: str,
     return None
 
 
-async def download_property_images(session: aiohttp.ClientSession, photo_urls: List[str], 
+async def download_property_images(session: httpx.AsyncClient, photo_urls: List[str], 
                                  max_images: int = 10) -> Dict[str, Image.Image]:
     """
     Download images for a property
     
     Args:
-        session: aiohttp client session
+        session: httpx async client
         photo_urls: List of photo URLs
         max_images: Maximum number of images to download
         

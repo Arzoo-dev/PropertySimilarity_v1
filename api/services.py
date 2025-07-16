@@ -9,7 +9,7 @@ import torch
 import numpy as np
 import re
 from typing import List, Dict, Tuple, Any, Optional
-import aiohttp
+import httpx
 import asyncio
 from pathlib import Path
 
@@ -17,7 +17,8 @@ from pathlib import Path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import model and utility functions
-from siamese_network import SiameseNetwork
+from models.model_builder import DINOv2Retrieval  # Use your main model builder
+import yaml
 from api.utils import (
     download_property_images,
     preprocess_images,
@@ -34,7 +35,7 @@ elif os.path.exists('/workspace/final_model'):
 else:
     DEFAULT_MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'final_model/')
 
-MODEL_CHECKPOINT = "siamese_embedding_model.pt"
+MODEL_CHECKPOINT = "DINOv2_custom.pth"
 
 
 class ModelService:
@@ -72,7 +73,7 @@ class ModelService:
             asyncio.run(self._async_load_model())
         
     async def _async_load_model(self):
-        """Load the SiameseNetwork model from local file system or GCS"""
+        """Load the DINOv2Retrieval model from local file system or GCS"""
         try:
             model_path = None
             
@@ -87,7 +88,7 @@ class ModelService:
                         bucket_name = match.group(1)
                         blob_path = match.group(2)
                         
-                        logger.info(f"Attempting to download model from GCS: {self.model_gcs_path}")
+                        logger.info(f"Attempting to download DINOv2 model from GCS: {self.model_gcs_path}")
                         # Download model to a temporary file
                         temp_path = await download_blob_to_temp(bucket_name, blob_path)
                         
@@ -105,39 +106,52 @@ class ModelService:
                 
                 # Check if the file exists
                 if not os.path.exists(model_path):
+                    logger.info(f"Looking for main model file: {MODEL_CHECKPOINT}")
                     # Try some alternative locations
                     alt_locations = [
                         os.path.join('/app/final_model', MODEL_CHECKPOINT),
                         os.path.join('/workspace/final_model', MODEL_CHECKPOINT),
-                        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'final_model', MODEL_CHECKPOINT)
+                        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'final_model', MODEL_CHECKPOINT),
                     ]
                     
                     for alt_path in alt_locations:
                         if os.path.exists(alt_path):
                             model_path = alt_path
-                            logger.info(f"Found model at alternative location: {model_path}")
+                            logger.info(f"Found DINOv2 model at alternative location: {model_path}")
                             break
             
             # Check if model exists
             if not os.path.exists(model_path):
-                logger.error(f"Model checkpoint not found at: {model_path}")
-                raise FileNotFoundError(f"Model checkpoint not found at: {model_path}")
+                logger.error(f"DINOv2 model checkpoint not found at: {model_path}")
+                raise FileNotFoundError(f"DINOv2 model checkpoint not found at: {model_path}")
             
-            # Initialize model
-            self.model = SiameseNetwork(embedding_dim=256, backbone="resnet50")
+            # Initialize DINOv2Retrieval model with your custom configuration
+            logger.info("Initializing DINOv2Retrieval model...")
+            self.model = DINOv2Retrieval(
+                model_name="vit_base_patch14_dinov2",
+                pretrained=True,
+                embedding_dim=768,  # Match your training configuration
+                dropout=0.1,
+                freeze_backbone=True  # This matches your training config
+            )
+            
             # Load model state and configuration (handles both directory and single-file paths)
-            self.model.load_model(model_path)
-            # Move embedding and aggregator modules to device
-            self.model.embedding_model.to(self.device)
-            self.model.property_aggregator.to(self.device)
-            # Set modules to evaluation mode
-            self.model.embedding_model.eval()
-            self.model.property_aggregator.eval()
+            logger.info(f"Loading DINOv2 model weights from: {model_path}")
+            checkpoint = torch.load(model_path, map_location=self.device)
+            if 'model_state_dict' in checkpoint:
+                self.model.load_state_dict(checkpoint['model_state_dict'])
+                logger.info("Loaded model from checkpoint with state_dict")
+            else:
+                self.model.load_state_dict(checkpoint)
+                logger.info("Loaded model weights directly")
+                
+            self.model.to(self.device)
+            self.model.eval()
             
-            logger.info(f"Model loaded successfully from {model_path} to {self.device}")
+            logger.info(f"DINOv2Retrieval model loaded successfully from {model_path} to {self.device}")
             
         except Exception as e:
-            logger.error(f"Error loading model: {str(e)}")
+            logger.error(f"Error loading DINOv2 model: {str(e)}")
             raise
     
     async def compare_properties(
@@ -168,8 +182,8 @@ class ModelService:
         if max_comps and max_comps < len(comp_properties):
             comp_properties = comp_properties[:max_comps]
         
-        # Create aiohttp session for image downloads
-        async with aiohttp.ClientSession() as session:
+        # Create httpx async client for image downloads
+        async with httpx.AsyncClient() as session:
             # Download subject property images
             subject_images = await download_property_images(
                 session, subject_photos, self.max_images_per_property
@@ -261,41 +275,27 @@ class ModelService:
             return result
     
     def _calculate_similarity(self, subject_tensor: torch.Tensor, comp_tensor: torch.Tensor) -> float:
-        """
-        Calculate similarity score between subject and comp properties
-        
-        Args:
-            subject_tensor: Preprocessed subject property images
-            comp_tensor: Preprocessed comp property images
-            
-        Returns:
-            Similarity score (0-10)
-        """
-        if subject_tensor.size(0) == 0 or comp_tensor.size(0) == 0:
-            logger.warning("Empty tensor detected in similarity calculation")
-            return 0.0
-        
+        """Calculate similarity score between subject and comp property images using DINOv2"""
         try:
             # Move tensors to device
             subject_tensor = subject_tensor.to(self.device)
             comp_tensor = comp_tensor.to(self.device)
             
-            # Get embeddings using the embedding_model
-            subject_embedding = self.model.embedding_model(subject_tensor)
-            comp_embedding = self.model.embedding_model(comp_tensor)
+            # Get embeddings for both properties (already L2-normalized by the model)
+            subject_embeddings = self.model(subject_tensor)  # Shape: [N, 768]
+            comp_embeddings = self.model(comp_tensor)       # Shape: [M, 768]
             
-            # Calculate average embedding for each property
-            subject_avg = torch.mean(subject_embedding, dim=0, keepdim=True)
-            comp_avg = torch.mean(comp_embedding, dim=0, keepdim=True)
+            # Average pool the embeddings for each property
+            subject_avg = torch.mean(subject_embeddings, dim=0)  # Shape: [768]
+            comp_avg = torch.mean(comp_embeddings, dim=0)        # Shape: [768]
             
-            # Calculate distance (Euclidean)
-            distance = torch.nn.functional.pairwise_distance(subject_avg, comp_avg).item()
+            # Calculate cosine similarity (since embeddings are already normalized, this is just dot product)
+            similarity = torch.dot(subject_avg, comp_avg)
             
-            # Convert distance to similarity score (0-10)
-            # Lower distance means higher similarity
-            similarity = 10.0 * (1.0 - min(distance, 1.0))
+            # Convert from [-1, 1] range to [0, 10] range to match API expectations
+            score = ((similarity + 1) / 2) * 10
             
-            return similarity
+            return score.item()
             
         except Exception as e:
             logger.error(f"Error calculating similarity: {str(e)}")

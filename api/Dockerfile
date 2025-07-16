@@ -21,6 +21,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     git \
     ca-certificates \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -32,13 +37,14 @@ RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.9 && \
 WORKDIR /build
 
 # Copy requirements file
-COPY RunPodsModel/api/requirements.txt ./requirements.txt
+COPY api/requirements.txt ./requirements.txt
 
 # Install dependencies in a single layer to reduce image size
-RUN python3.9 -m pip install --no-cache-dir fastapi uvicorn google-cloud-storage google-cloud-logging && \
-    python3.9 -m pip install --no-cache-dir numpy==1.24.3 && \
-    python3.9 -m pip install --no-cache-dir --default-timeout=900 torch==2.1.0+cu118 torchvision==0.16.0+cu118 --extra-index-url https://download.pytorch.org/whl/cu118 && \
-    python3.9 -m pip install --no-cache-dir -r requirements.txt && \
+RUN python3.9 -m pip install --no-cache-dir fastapi==0.104.1 uvicorn==0.24.0 httpx>=0.24.0 pydantic>=1.10.12,<2.0.0 && \
+    python3.9 -m pip install --no-cache-dir torch>=2.2.0 torchvision>=0.17.0 && \
+    python3.9 -m pip install --no-cache-dir timm>=0.9.0 && \
+    python3.9 -m pip install --no-cache-dir pillow numpy==1.26.1 requests python-multipart && \
+    python3.9 -m pip install --no-cache-dir python-dotenv psutil && \
     rm -rf ~/.cache/pip
 
 # Verify PyTorch installation and show package locations
@@ -87,37 +93,37 @@ RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.9 && \
 WORKDIR /app
 
 # Install PyTorch and other dependencies directly in runtime stage
-RUN python3.9 -m pip install --no-cache-dir fastapi==0.95.1 uvicorn==0.22.0 aiohttp==3.8.4 pydantic==1.10.7 && \
-    python3.9 -m pip install --no-cache-dir numpy==1.24.3 && \
-    python3.9 -m pip install --no-cache-dir google-cloud-storage google-cloud-logging pillow scikit-learn && \
-    python3.9 -m pip install --no-cache-dir tqdm matplotlib pandas opencv-python urllib3 albumentations && \
-    python3.9 -m pip install --no-cache-dir --default-timeout=1800 --retries=5 --resume-retries=5 \
-        torch==2.1.0+cu118 \
-        torchvision==0.16.0+cu118 \
-        --extra-index-url https://download.pytorch.org/whl/cu118 && \
-    python3.9 -m pip install --no-cache-dir networkx>=3.0 python-multipart>=0.0.5 python-dotenv>=0.19.0 yarl>=1.8.2 && \
-    python3.9 -m pip install --no-cache-dir tensorboard>=2.11.0 pytest>=6.2.5 httpx>=0.19.0 && \
-    python3.9 -m pip install --no-cache-dir nvidia-ml-py3>=7.352.0 psutil>=5.9.0 && \
+RUN python3.9 -m pip install --no-cache-dir fastapi==0.104.1 uvicorn==0.24.0 httpx>=0.24.0 pydantic==1.10.12 && \
+    python3.9 -m pip install --no-cache-dir torch>=2.2.0 torchvision>=0.17.0 && \
+    python3.9 -m pip install --no-cache-dir timm>=0.9.0 && \
+    python3.9 -m pip install --no-cache-dir pillow numpy==1.26.1 requests python-multipart && \
+    python3.9 -m pip install --no-cache-dir httpx python-dotenv psutil google-cloud-storage google-cloud-logging && \
     rm -rf ~/.cache/pip
 
 # Copy requirements for reference but don't install twice
-COPY RunPodsModel/api/requirements.txt ./requirements.txt
+COPY api/requirements.txt ./requirements.txt
 
 # Create all necessary directories with proper permissions
-RUN mkdir -p ./api ./final_model ./weights /root/.config/gcloud && \
+RUN mkdir -p ./api ./models ./final_model ./weights /root/.config/gcloud && \
     chmod -R 755 /root/.config/gcloud
 
 # Copy only the files needed for inference
-COPY RunPodsModel/siamese_network.py ./
-COPY RunPodsModel/api/__init__.py ./api/__init__.py
-COPY RunPodsModel/api/main.py ./api/main.py
-COPY RunPodsModel/api/services.py ./api/services.py
-COPY RunPodsModel/api/utils.py ./api/utils.py
-COPY RunPodsModel/api/schemas.py ./api/schemas.py
+COPY models/model_builder.py ./models/model_builder.py
+COPY api/__init__.py ./api/__init__.py
+COPY api/main.py ./api/main.py
+COPY api/services.py ./api/services.py
+COPY api/utils.py ./api/utils.py
+COPY api/schemas.py ./api/schemas.py
 
-# Copy and make executable the startup script
-COPY RunPodsModel/api/start.sh /start.sh
-RUN chmod +x /start.sh
+# Copy the trained model (optional - you can also mount this as a volume)
+COPY final_model/DINOv2_custom.pth ./final_model/DINOv2_custom.pth
+
+# Install dos2unix for reliable line ending conversion
+RUN apt-get update && apt-get install -y dos2unix && rm -rf /var/lib/apt/lists/*
+
+# Copy and fix the startup script
+COPY api/start.sh /start.sh
+RUN dos2unix /start.sh && chmod +x /start.sh
 
 # Set environment variables
 ENV MODEL_DIR=/app/final_model
@@ -151,7 +157,9 @@ RUN echo "Verifying Python version..." && \
     echo "Verifying tqdm installation..." && \
     python3.9 -c "import tqdm; print(f'tqdm version: {tqdm.__version__}')" && \
     echo "Verifying other key packages..." && \
-    python3.9 -c "import matplotlib, pandas, cv2, albumentations; print('All key packages loaded successfully')" && \
+    python3.9 -c "import timm, fastapi, httpx; print('All key packages loaded successfully')" && \
+    echo "Verifying timm installation..." && \
+    python3.9 -c "import timm; print(f'timm version: {timm.__version__}')" && \
     echo "Verifying gsutil installation..." && \
     gsutil --version && \
     echo "Verifying GCS Python package..." && \

@@ -1,18 +1,18 @@
-# API dependencies with specific versions to ensure compatibility with Python 3.9
-fastapi==0.95.1
-uvicorn==0.22.0
-pydantic==1.10.7
-aiohttp==3.8.4
+# Create updated requirements file
 
-# Note: torch and torchvision are installed separately in the Dockerfile
-# with CUDA support via --extra-index-url
-torch==2.1.0
-torchvision==0.16.0
-# Required for PyTorch/torchvision with Python 3.9
+# API dependencies with updated versions for compatibility
+fastapi>=0.95.1
+uvicorn>=0.22.0
+pydantic>=1.10.7
+aiohttp>=3.8.4
+
+# Updated PyTorch versions (compatible with current PyPI)
+torch>=2.2.0
+torchvision>=0.17.0
 networkx>=3.0
 
 # Core data processing and utilities
-numpy==1.24.3
+numpy>=1.24.3
 pillow>=9.0.0
 scikit-learn>=1.0.2
 requests>=2.28.1
@@ -23,9 +23,9 @@ pandas>=1.2.0
 opencv-python>=4.5.0
 urllib3>=1.26.0
 
-# Google Cloud services
-google-cloud-storage>=2.0.0
-google-cloud-logging>=3.0.0
+# Google Cloud services (optional - comment out if not needed)
+# google-cloud-storage>=2.0.0
+# google-cloud-logging>=3.0.0
 
 # Testing and development
 pytest>=6.2.5
@@ -37,6 +37,6 @@ python-dotenv>=0.19.0
 yarl>=1.8.2
 tensorboard>=2.11.0
 
-# RunPods specific dependencies
-nvidia-ml-py3>=7.352.0
-psutil>=5.9.0 
+# Additional dependencies for your custom model
+timm>=0.9.0
+psutil>=5.9.0

@@ -1,0 +1,83 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+torch_env/
+
+# Logs
+*.log
+logs/
+
+# Model files (if you don't want to include them)
+# final_model/DINOv2_custom.pth
+# final_model/property_aggregator.pt
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Additional entries for your project:
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Training outputs and checkpoints
+checkpoints/
+runs/
+*.pth
+*.pt
+*.ckpt
+
+# Data directories
+data_without_augmentation/
+copy_expert_properties/
+hard_negative_output/
+margin_output/
+tsne_output/
+
+# Testing outputs
+testing/test_results/
+testing/fake_payloads/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Docker
+.dockerignore
+
+# Cloud Build
+cloudbuild.yaml.bak
+*.yaml.bak
+
+# Large files that shouldn't be in repo
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+
+# Documentation outputs
+extra-(docs-and-images)
+
+# API specific
+api/quick-test-result/
+api/tests/test_results/
+
+# Model configuration backups
+model_config.json.bak

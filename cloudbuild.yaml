@@ -1,7 +1,6 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     id: Build Docker Image
-    dir: 'api'
     args:
       [
         'build',
@@ -11,7 +10,6 @@ steps:
         'Dockerfile',
         '.'
       ]
-
 
   - name: 'gcr.io/cloud-builders/docker'
     id: Push Docker Image

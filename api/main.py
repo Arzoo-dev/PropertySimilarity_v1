@@ -23,7 +23,7 @@ setup_json_logging()
 # Create FastAPI application
 app = FastAPI(
     title="Property Comparison API",
-    description="API for comparing real estate properties using a Siamese neural network",
+    description="API for comparing real estate properties using a DINOv2 neural network",
     version="1.0.0"
 )
 
@@ -96,7 +96,7 @@ async def compare_properties(
     """
     Compare a subject property against multiple comp properties.
     
-    Uses the trained Siamese network to generate similarity scores.
+    Uses the trained DINOv2 network to generate similarity scores.
     """
     # Check if model service is initialized
     if model_service is None:

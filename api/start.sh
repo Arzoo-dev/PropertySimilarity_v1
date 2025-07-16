@@ -68,19 +68,19 @@ fi
 mkdir -p $MODEL_DIR
 echo "Created model directory: $MODEL_DIR"
 
-# Check specifically for the main model file siamese_embedding_model.pt
-echo "Looking for main model file: siamese_embedding_model.pt"
+# Check specifically for the main model file DINOv2_custom.pth
+echo "Looking for main model file: DINOv2_custom.pth"
 
 # Check for model in different locations with priority
-if [ ! -f "$MODEL_DIR/siamese_embedding_model.pt" ]; then
+if [ ! -f "$MODEL_DIR/DINOv2_custom.pth" ]; then
     echo "Main model file not found in $MODEL_DIR, checking alternative locations..."
     
     # Check for mounted volume at /app/weights
-    if [ -d "/app/weights" ] && [ -f "/app/weights/siamese_embedding_model.pt" ]; then
+    if [ -d "/app/weights" ] && [ -f "/app/weights/DINOv2_custom.pth" ]; then
         echo "Found main model file in mounted volume, copying from /app/weights to $MODEL_DIR"
         cp -rv /app/weights/* $MODEL_DIR/
     # Check for model in default Docker container location
-    elif [ -d "/app/final_model" ] && [ -f "/app/final_model/siamese_embedding_model.pt" ]; then
+    elif [ -d "/app/final_model" ] && [ -f "/app/final_model/DINOv2_custom.pth" ]; then
         echo "Copying main model file from /app/final_model to $MODEL_DIR"
         cp -rv /app/final_model/* $MODEL_DIR/
     # Download from Google Cloud Storage if path is provided
@@ -92,30 +92,30 @@ if [ ! -f "$MODEL_DIR/siamese_embedding_model.pt" ]; then
             echo "Detected property-comparison-model bucket"
             
             # If path points to the bucket or folder but not specific files
-            if [[ "$MODEL_GCS_PATH" == */ ]] || [[ ! "$MODEL_GCS_PATH" == *".pt" ]]; then
+            if [[ "$MODEL_GCS_PATH" == */ ]] || [[ ! "$MODEL_GCS_PATH" == *".pth" ]]; then
                 echo "Downloading model files from: ${MODEL_GCS_PATH}final_model/"
                 
                 # Download main model file first
-                echo "Downloading main model file siamese_embedding_model.pt..."
-                if gsutil cp "${MODEL_GCS_PATH}final_model/siamese_embedding_model.pt" "$MODEL_DIR/"; then
+                echo "Downloading main model file DINOv2_custom.pth..."
+                if gsutil cp "${MODEL_GCS_PATH}final_model/DINOv2_custom.pth" "$MODEL_DIR/"; then
                     echo "✅ Successfully downloaded main model file"
                 else
                     echo "❌ Failed to download main model file"
-                    echo "Command attempted: gsutil cp ${MODEL_GCS_PATH}final_model/siamese_embedding_model.pt $MODEL_DIR/"
+                    echo "Command attempted: gsutil cp ${MODEL_GCS_PATH}final_model/DINOv2_custom.pth $MODEL_DIR/"
                     # List contents of the GCS path for debugging
                     echo "Contents of GCS path:"
                     gsutil ls "${MODEL_GCS_PATH}final_model/" || echo "Failed to list directory contents"
                 fi
                 
                 # Download auxiliary files if main model was successful
-                if [ -f "$MODEL_DIR/siamese_embedding_model.pt" ]; then
+                if [ -f "$MODEL_DIR/DINOv2_custom.pth" ]; then
                     echo "Downloading auxiliary files..."
                     gsutil cp "${MODEL_GCS_PATH}final_model/model_config.json" "$MODEL_DIR/" && echo "✅ Downloaded model_config.json" || echo "⚠️ Could not download model_config.json"
-                    gsutil cp "${MODEL_GCS_PATH}final_model/optimizer.pt" "$MODEL_DIR/" && echo "✅ Downloaded optimizer.pt" || echo "⚠️ Could not download optimizer.pt"
+                    gsutil cp "${MODEL_GCS_PATH}final_model/property_aggregator.pt" "$MODEL_DIR/" && echo "✅ Downloaded property_aggregator.pt" || echo "⚠️ Could not download property_aggregator.pt"
                 fi
             else
                 # If the path points directly to the model file
-                if [[ "$MODEL_GCS_PATH" == *"siamese_embedding_model.pt" ]]; then
+                if [[ "$MODEL_GCS_PATH" == *"DINOv2_custom.pth" ]]; then
                     echo "Downloading main model file directly..."
                     if gsutil cp "$MODEL_GCS_PATH" "$MODEL_DIR/"; then
                         echo "✅ Successfully downloaded main model file"
@@ -133,13 +133,13 @@ fi
 
 # Final verification of model files
 echo "Verifying downloaded model files..."
-if [ -f "$MODEL_DIR/siamese_embedding_model.pt" ]; then
-    echo "✅ Main model file siamese_embedding_model.pt is available"
-    echo "Model file size: $(ls -lh $MODEL_DIR/siamese_embedding_model.pt)"
+if [ -f "$MODEL_DIR/DINOv2_custom.pth" ]; then
+    echo "✅ Main model file DINOv2_custom.pth is available"
+    echo "Model file size: $(ls -lh $MODEL_DIR/DINOv2_custom.pth)"
     echo "Model directory contents:"
     ls -lh $MODEL_DIR/
 else
-    echo "❌ CRITICAL ERROR: Main model file siamese_embedding_model.pt not found!"
+    echo "❌ CRITICAL ERROR: Main model file DINOv2_custom.pth not found!"
     echo "The API will not work without this file."
     echo "Files in model directory ($MODEL_DIR):"
     ls -la $MODEL_DIR

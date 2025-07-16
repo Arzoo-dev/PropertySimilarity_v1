@@ -1,0 +1,50 @@
+# Simplified DINOv2 Training Configuration
+# Contains only essential parameters that users typically need to modify
+# Implementation details and rarely-changed parameters are now handled as code defaults
+
+# Data Configuration
+data:
+  root_dir: "data_without_augmentation"           # Path to your processed data
+  train_ratio: 0.8                               # Training/validation split ratio
+  max_memory_cached: 8                           # GB of RAM for dataset caching
+  num_workers: 1                                 # Number of data loading workers
+  chunk_size: 100000                             # Triplets per memory chunk
+
+# Model Configuration  
+model:
+  name: "vit_base_patch14_dinov2"               # DINOv2 model variant
+  embedding_dim: 768                            # Output embedding dimension
+  freeze_backbone: true                         # Freeze backbone, train projection head only
+
+# Training Configuration
+training:
+  batch_size: 32                                # Training batch size
+  effective_batch_size: 128                     # Effective batch size (batch_size * grad_accum_steps)
+  epochs: 2                                   # Number of training epochs
+  learning_rate: 1e-5                          # Learning rate
+  weight_decay: 1e-5                           # Weight decay
+  margin: 0.2                                  # Triplet loss margin
+  subject_split_file_location: "dataset/training_splits/"  # Path to subject split files
+
+# Hard Negative Mining Configuration
+hard_negative_mining:
+  enabled: true                                # Enable hard negative mining
+  similarity_threshold: 0.8                   # Minimum similarity for hard negatives
+  max_negatives_per_anchor: 5                 # Max hard negatives per anchor
+
+# Note: The following parameters are now handled as code defaults in train_pipeline.py:
+# - data.random_seed (42)
+# - data.pin_memory (true) 
+# - data.prefetch_factor (None/auto)
+# - data.persistent_workers (true)
+# - data.drop_last (true)
+# - data.multiprocessing_context ("spawn" on Windows, configurable on Linux)
+# - data.cache_flush_threshold (95)
+# - model.pretrained (true)
+# - model.dropout (0.1)
+# - training.gradient_accumulation_steps (calculated from effective_batch_size/batch_size)
+# - training.warmup_epochs (1)
+# - optimization.* (all implementation optimizations)
+# - logging.* (sensible defaults)
+# - visualization.* (sensible defaults)
+# - hard_negative_mining.directory ("hard_negative_output/mining_results") 

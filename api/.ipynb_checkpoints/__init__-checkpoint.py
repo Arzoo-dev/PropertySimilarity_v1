@@ -1,3 +1,0 @@
-"""
-Property Comparison API Module
-""" 
