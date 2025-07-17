@@ -7,7 +7,7 @@ steps:
         '-t',
         'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed',
         '-f',
-        'Dockerfile',
+        'api/Dockerfile',
         '.'
       ]
 
@@ -48,7 +48,7 @@ steps:
           --max-instances=3 \
           --execution-environment=gen2 \
           --update-secrets=GOOGLE_APPLICATION_CREDENTIALS_JSON=projects/464994061323/secrets/dash-comps-puller-ai:latest \
-          --labels=cloud.googleapis.com/accelerator=nvidia-l4
+          --set-env-vars=MODEL_GCS_PATH=gs://property-comparison-model/DINOv2_custom.pth
 
 availableSecrets:
   secretManager:
