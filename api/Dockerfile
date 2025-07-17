@@ -115,8 +115,8 @@ COPY api/services.py ./api/services.py
 COPY api/utils.py ./api/utils.py
 COPY api/schemas.py ./api/schemas.py
 
-# Copy the trained model (optional - you can also mount this as a volume)
-COPY final_model/DINOv2_custom.pth ./final_model/DINOv2_custom.pth
+# Create the model directory (model will be downloaded at runtime)
+RUN mkdir -p ./final_model
 
 # Install dos2unix for reliable line ending conversion
 RUN apt-get update && apt-get install -y dos2unix && rm -rf /var/lib/apt/lists/*
