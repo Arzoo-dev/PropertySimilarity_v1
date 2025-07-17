@@ -10,18 +10,19 @@ A FastAPI service for comparing real estate properties using a DINOv2 neural net
 - Detailed similarity metrics and comparison results
 - Configurable similarity threshold
 - Google Cloud Storage integration for model loading
-- Vertex AI deployment support
-- Flexible model loading from multiple sources
+- Vertex AI and Cloud Run deployment support
+- Flexible model loading from multiple sources (GCS, local, mounted volume)
 - Optimized multi-stage Docker build
-- **Vertex AI compatible endpoint**
+- Health check endpoints for deployment readiness
+- Enhanced logging for debugging and cloud monitoring
 
 ## Installation
 
 1. Install dependencies:
 
-```bash
-pip install -r requirements.txt
-```
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 2. Ensure you have the model files in one of these locations:
    - Local `final_model` directory
@@ -55,10 +56,17 @@ uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 ### Environment Variables
 
 - `MODEL_DIR`: Path to the directory containing the model checkpoint (default: `/app/final_model`)
-- `MODEL_GCS_PATH`: Google Cloud Storage path to model in format gs://bucket-name/path/to/model.pth.tar
-- `PORT`: Port to run the API server on (default: 8080, auto-detected on Vertex AI)
+- `MODEL_GCS_PATH`: Google Cloud Storage path to model in format `gs://bucket-name/path/to/model.pth`
+- `PORT`: Port to run the API server on (default: 8080)
 - `HOST`: Host to bind the server to (default: 0.0.0.0)
 - `ENABLE_CLOUD_LOGGING`: Set to "true" to enable Google Cloud Logging (default: false)
+
+### Model Loading and GCS Authentication
+
+- The service supports loading the model from GCS, local directory, or a mounted volume.
+- GCS authentication is handled using Cloud Run's Workload Identity or Vertex AI's default service account. No service account key file is required or recommended.
+- If using Cloud Run, ensure the service account has `roles/storage.objectViewer` on the GCS bucket.
+- The model is loaded with `pretrained=False` to avoid unnecessary downloads from HuggingFace; only your custom weights are used.
 
 ### API Endpoints
 
@@ -113,7 +121,10 @@ Example request:
 }
 ```
 
-Example response:
+- The Docker image is ready for deployment to Google Cloud Run or Vertex AI.
+- The startup script (`start.sh`) handles model file verification and downloads from GCS if needed.
+- Health checks are implemented for deployment readiness.
+- Automatic worker scaling is supported based on available CPU cores.
 
 ```json
 {
@@ -261,80 +272,19 @@ Interactive documentation is available at:
 Run the tests:
 
 ```bash
-pytest api/tests/
-```
-
-Or run the test file directly:
-
-```bash
-python -m api.tests.test_api
-```
-
-## Docker
-
-The project includes a multi-stage Dockerfile that significantly reduces the final image size and improves security.
-
-### Build the Docker image:
-
-```bash
-docker build -t property-api-dinov2 -f api/Dockerfile .
-```
-
-#### Key Features of the Docker Image:
-
-- CUDA 11.8 with cuDNN for GPU acceleration
-- Multi-stage build for smaller final image
-- OpenCV system dependencies pre-installed
-- tqdm, matplotlib, pandas, and other data science packages included
-- Extended timeout and retry settings for large package downloads
-- Comprehensive verification steps to ensure all packages are installed correctly
-
-### Run with different model loading options:
-
-#### 1. Run with mounted model weights:
-
-```bash
-docker run -p 8080:8080 --gpus all -v /path/to/local/model/weights:/app/weights property-api-dinov2
-```
-
-#### 2. Run with Google Cloud Storage model:
-
-```bash
-docker run -p 8080:8080 --gpus all -e MODEL_GCS_PATH=gs://your-bucket/models/DINOv2_custom.pth property-api-dinov2
-```
-
-#### 3. Run with model embedded in the image:
-
-If you need to include the model in the image (not recommended for larger models):
-
-```bash
-# First modify the Dockerfile to uncomment the COPY line for model files
-docker build -t property-api-with-model -f RunPodsModel/api/Dockerfile --build-arg INCLUDE_MODEL=true .
-docker run -p 8080:8080 --gpus all property-api-with-model
-```
-
-## Vertex AI Deployment
-
-To deploy the API to Vertex AI:
-
-1. Store your model in a Google Cloud Storage bucket:
-
-```bash
-gsutil cp -r final_model/* gs://your-bucket/models/
-```
-
-2. Build the Docker image and push it to Artifact Registry:
-
-```bash
-# Configure Docker for Artifact Registry
-gcloud auth configure-docker us-central1-docker.pkg.dev
-
-# Build and tag the image
-docker build -t property-api-dinov2 -f api/Dockerfile .
-docker tag property-api-dinov2 us-central1-docker.pkg.dev/your-project/property-api-repo/property-api:latest
-
-# Push to Artifact Registry
-docker push us-central1-docker.pkg.dev/your-project/property-api-repo/property-api:latest
+gcloud run deploy compare-property \
+  --image=YOUR_IMAGE_URI \
+  --region=YOUR_REGION \
+  --platform=managed \
+  --allow-unauthenticated \
+  --service-account=YOUR_SERVICE_ACCOUNT \
+  --cpu=4 \
+  --memory=16Gi \
+  --timeout=300s \
+  --port=8080 \
+  --max-instances=3 \
+  --execution-environment=gen2 \
+  --set-env-vars=MODEL_GCS_PATH=gs://your-bucket/final_model/DINOv2_custom.pth
 ```
 
 ### Automated Deployment with Cloud Build

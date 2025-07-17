@@ -28,7 +28,7 @@ class PropertyComparisonRequest(BaseModel):
     """Request model for property comparison"""
     subject_property: PropertyInput = Field(..., description="Subject property to compare against comps")
     comps: List[CompProperty] = Field(..., description="List of comparable properties")
-    threshold: Optional[float] = Field(5.0, description="Similarity threshold (0-10)")
+    threshold: Optional[float] = Field(7.5, description="Similarity threshold (0-10)")
     max_comps: Optional[int] = Field(None, description="Maximum number of comps to process")
 
 

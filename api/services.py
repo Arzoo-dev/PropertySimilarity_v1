@@ -158,7 +158,7 @@ class ModelService:
         self,
         subject_photos: List[str],
         comp_properties: List[Dict[str, Any]],
-        threshold: float = 5.0,
+        threshold: float = 7.5,
         max_comps: Optional[int] = None
     ) -> Dict[str, Any]:
         """
