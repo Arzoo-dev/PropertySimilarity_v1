@@ -50,7 +50,7 @@ steps:
           --max-instances=3 \
           --execution-environment=gen2 \
           --update-secrets=GOOGLE_APPLICATION_CREDENTIALS_JSON=projects/464994061323/secrets/dash-comps-puller-ai:latest \
-          --set-env-vars=MODEL_GCS_PATH=gs://property-comparison-model/DINOv2_custom.pth
+          --set-env-vars=MODEL_GCS_PATH=gs://property-comparison-model/final_model/DINOv2_custom.pth
 
 availableSecrets:
   secretManager:

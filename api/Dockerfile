@@ -39,12 +39,8 @@ WORKDIR /build
 # Copy requirements file
 COPY api/requirements.txt ./requirements.txt
 
-# Install dependencies in a single layer to reduce image size
-RUN python3.9 -m pip install --no-cache-dir fastapi==0.104.1 uvicorn==0.24.0 httpx>=0.24.0 "pydantic==1.10.12" && \
-    python3.9 -m pip install --no-cache-dir torch>=2.2.0 torchvision>=0.17.0 && \
-    python3.9 -m pip install --no-cache-dir timm>=0.9.0 && \
-    python3.9 -m pip install --no-cache-dir pillow numpy==1.26.1 requests python-multipart && \
-    python3.9 -m pip install --no-cache-dir python-dotenv psutil && \
+# Install from requirements.txt instead of hardcoded versions
+RUN python3.9 -m pip install --no-cache-dir -r requirements.txt && \
     rm -rf ~/.cache/pip
 
 # Verify PyTorch installation and show package locations
@@ -133,7 +129,7 @@ ENV PYTHONUNBUFFERED=1
 ENV CUDA_VISIBLE_DEVICES=0
 ENV TMPDIR=/var/tmp
 ENV GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
-ENV MODEL_GCS_PATH=gs://property-comparison-model/
+ENV MODEL_GCS_PATH=gs://property-comparison-model/final_model/DINOv2_custom.pth
 
 # Create and set permissions for directories
 RUN mkdir -p $TMPDIR && chmod 1777 $TMPDIR && \
