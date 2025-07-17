@@ -129,7 +129,7 @@ class ModelService:
             logger.info("Initializing DINOv2Retrieval model...")
             self.model = DINOv2Retrieval(
                 model_name="vit_base_patch14_dinov2",
-                pretrained=True,
+                pretrained=False,  # ← FIX: Don't download from HuggingFace
                 embedding_dim=768,  # Match your training configuration
                 dropout=0.1,
                 freeze_backbone=True  # This matches your training config

@@ -128,7 +128,7 @@ ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 ENV CUDA_VISIBLE_DEVICES=0
 ENV TMPDIR=/var/tmp
-ENV GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
+# ENV GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp-key.json
 ENV MODEL_GCS_PATH=gs://property-comparison-model/final_model/DINOv2_custom.pth
 
 # Create and set permissions for directories
