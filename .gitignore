@@ -74,6 +74,7 @@ cloudbuild.yaml.bak
 
 # Documentation outputs
 extra-(docs-and-images)
+project_summary.md
 
 # API specific
 api/quick-test-result/
