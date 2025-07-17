@@ -1,4 +1,5 @@
 steps:
+  # Step 1: Build Docker Image
   - name: 'gcr.io/cloud-builders/docker'
     id: Build Docker Image
     args:
@@ -11,6 +12,7 @@ steps:
         '.'
       ]
 
+  # Step 2: Push Docker Image
   - name: 'gcr.io/cloud-builders/docker'
     id: Push Docker Image
     args:
@@ -19,7 +21,9 @@ steps:
         'us-central1-docker.pkg.dev/dash-realty-agent-portal/property-api-repo-us-central1/property-api-vertex-fixed'
       ]
 
+  # Step 3: Authenticate with Google Cloud
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: Authenticate with Service Account
     entrypoint: 'bash'
     secretEnv: ['GOOGLE_APPLICATION_CREDENTIALS_JSON']
     args:
@@ -30,7 +34,9 @@ steps:
         gcloud auth activate-service-account --key-file=sa_key.json
         gcloud config set project dash-realty-agent-portal
 
+  # Step 4: Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: Deploy to Cloud Run
     entrypoint: 'bash'
     args:
       - '-c'
@@ -57,3 +63,5 @@ availableSecrets:
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+  timeout: 1800s # Adjust based on expected build time (30 minutes)
