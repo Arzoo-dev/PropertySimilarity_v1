@@ -55,15 +55,19 @@ uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 
 ### Environment Variables
 
-- `MODEL_DIR`: Path to the directory containing the model checkpoint (default: `/app/final_model`)
-- `MODEL_GCS_PATH`: Google Cloud Storage path to model in format `gs://bucket-name/path/to/model.pth`
+- `MODEL_DIR`: Path to the directory containing the model checkpoint (default: `/app/final_model` or `/workspace/final_model`)
+- `MODEL_GCS_PATH`: Google Cloud Storage path to model in format `gs://bucket-name/path/to/model.pth` (default: `gs://YOUR_BUCKET/final_model/DINOv2_custom.pth`)
+- `GOOGLE_APPLICATION_CREDENTIALS_JSON`: Secret containing service account credentials (set via Cloud Run secrets)
 - `PORT`: Port to run the API server on (default: 8080)
 - `HOST`: Host to bind the server to (default: 0.0.0.0)
 - `ENABLE_CLOUD_LOGGING`: Set to "true" to enable Google Cloud Logging (default: false)
 
 ### Model Loading and GCS Authentication
 
-- The service supports loading the model from GCS, local directory, or a mounted volume.
+- The service supports loading the model from GCS, local directory, or a mounted volume, with the following search order:
+   1. Check mounted volume at `/app/weights`
+   2. Check local directory at `/app/final_model` or `/workspace/final_model`
+   3. Download from GCS if `MODEL_GCS_PATH` is provided
 - GCS authentication is handled using Cloud Run's Workload Identity or Vertex AI's default service account. No service account key file is required or recommended.
 - If using Cloud Run, ensure the service account has `roles/storage.objectViewer` on the GCS bucket.
 - The model is loaded with `pretrained=False` to avoid unnecessary downloads from HuggingFace; only your custom weights are used.
@@ -273,18 +277,19 @@ Run the tests:
 
 ```bash
 gcloud run deploy compare-property \
-  --image=YOUR_IMAGE_URI \
-  --region=YOUR_REGION \
+  --image=YOUR_REGION-docker.pkg.dev/YOUR_PROJECT_ID/YOUR_REPO/YOUR_IMAGE \
+  --region=us-central1 \
   --platform=managed \
   --allow-unauthenticated \
-  --service-account=YOUR_SERVICE_ACCOUNT \
+  --service-account=YOUR_SERVICE_ACCOUNT_EMAIL \
   --cpu=4 \
   --memory=16Gi \
   --timeout=300s \
   --port=8080 \
   --max-instances=3 \
   --execution-environment=gen2 \
-  --set-env-vars=MODEL_GCS_PATH=gs://your-bucket/final_model/DINOv2_custom.pth
+  --update-secrets=GOOGLE_APPLICATION_CREDENTIALS_JSON=projects/YOUR_PROJECT_ID/secrets/YOUR_SECRET_NAME:latest \
+  --set-env-vars=MODEL_GCS_PATH=gs://YOUR_BUCKET/final_model/DINOv2_custom.pth
 ```
 
 ### Automated Deployment with Cloud Build
@@ -293,7 +298,7 @@ This repository includes a `cloudbuild.yaml` file that automates the deployment 
 
 ```bash
 # Trigger the Cloud Build pipeline
-gcloud builds submit --config RunPodsModel/api/cloudbuild.yaml
+gcloud builds submit --config cloudbuild.yaml
 ```
 
 The Cloud Build configuration:

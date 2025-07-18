@@ -5,13 +5,16 @@ This project implements fine-tuning of the DINOv2 model using triplet loss for p
 ## 🚀 Quick Start
 
 ```bash
-# Run the consolidated training pipeline (combines hard negative mining + training)
+# 1. Prepare and split the dataset (creates training batches)
+python data_preparation.py
+
+# 2. Run the consolidated training pipeline (combines hard negative mining + training)
 python train_pipeline.py --config config/training_config.yaml
 
-# Run t-SNE comparison for embedding visualization
+# 3. Run t-SNE comparison for embedding visualization
 python run_tsne_comparison.py
 
-# Run property comparison testing
+# 4. Run property comparison testing
 cd testing && python test_pipeline.py
 ```
 
@@ -118,9 +121,12 @@ pip install -r requirements.txt
 
 ### 2. Data Preparation
 ```bash
-# Process and augment the dataset
+# Process and augment the dataset, and create training splits
 python data_preparation.py
-# Creates training batches automatically
+# - Prompts for raw data path and output directory
+# - Optionally skips augmentation
+# - Automatically creates balanced anchor/positive/negative folders
+# - Splits subjects into batches and saves split files in dataset/training_splits/
 ```
 
 ### 3. Training Pipeline
